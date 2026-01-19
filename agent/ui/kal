@@ -1,0 +1,163 @@
+import sys
+import json
+import re
+import traceback
+from agent.models.llm import ask, download_model
+from agent.tools.web_reader import read_url, summarize_text
+from agent.tools.calculator import calculate
+from agent.tools.internet_search import search_and_summarize, search_urls
+from agent.memory.store import MemoryStore, KnowledgeStore
+from agent.tools.file_io import write_text, read_text
+from agent.tools.system_monitor import get_system_status
+from agent.tools.code_completion import complete_code as code_complete
+from agent.tools.learn_from_web import learn_from_web
+
+# Hafıza (short-term: son konuşmalar, long-term: kalıcı bilgi deposu)
+short_term_memory = MemoryStore(max_history=100)
+long_term_memory = KnowledgeStore()
+
+# Web arama ve özet cache
+web_cache = {}
+
+# CLI çıktıları için basit renkler
+class Colors:
+    HEADER = "\033[95m"
+    OKBLUE = "\033[94m"
+    OKCYAN = "\033[96m"
+    OKGREEN = "\033[92m"
+    WARNING = "\033[93m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+
+AVAILABLE_TOOLS = {
+    "web_reader": {"func": read_url, "description": "Web sayfasından metin okur."},
+    "summarize_text": {"func": summarize_text, "description": "Bir metni özetler."},
+    "search_and_summarize": {"func": search_and_summarize, "description": "İnternette arama yapar, ilk sonucu özetler."},
+    "search_urls": {"func": search_urls, "description": "İnternette arama yapar, URL listeler."},
+    "calculator": {"func": calculate, "description": "Matematiksel ifadeleri hesaplar."},
+    "add_note": {"func": long_term_memory.add_note, "description": "Kalıcı not ekler."},
+    "search_notes": {"func": long_term_memory.search_notes, "description": "Notlarda arama yapar."},
+    "write_text": {"func": write_text, "description": "Dosyaya metin yazar."},
+    "read_text": {"func": read_text, "description": "Dosyadan metin okur."},
+    "get_system_status": {"func": get_system_status, "description": "CPU ve RAM durumunu döner."},
+    "code_complete": {"func": code_complete, "description": "Eksik Python kodunu tamamlar."},
+    "learn_from_web": {
+        "func": lambda inp: learn_from_web(inp, ask, long_term_memory),
+        "description": "Web araması yapar, özetler ve hafızaya kaydeder."
+    },
+}
+
+def extract_json(text: str):
+    """Model cevabından JSON kısmını güvenli şekilde ayıklar."""
+    match = re.search(r"\{.*\}", text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(0))
+        except json.JSONDecodeError:
+            return None
+    return None
+
+def log_tool_action(thought, tool_name, tool_input, reward=None):
+    """Araç seçimlerini RL policy için logla."""
+    print(f"{Colors.OKCYAN}\n[POLICY-LOG] Thought: {thought}{Colors.ENDC}")
+    print(f"{Colors.OKCYAN}[POLICY-LOG] Action: {tool_name}, Input: {tool_input}{Colors.ENDC}")
+    if reward is not None:
+        print(f"{Colors.OKCYAN}[POLICY-LOG] Reward: {reward}{Colors.ENDC}")
+
+def run_agent(user_prompt: str):
+    short_term_memory.add_message(role="user", content=user_prompt)
+
+    tools_string = "\n".join([f"- {t}: {i['description']}" for t, i in AVAILABLE_TOOLS.items()])
+
+    prompt = f"""
+Sen bir yapay zeka asistansın.
+Kurallar:
+- Kullanıcının sorusuna direkt yanıt ver.
+- Eğer araç kullanılması gerekiyorsa JSON formatında dön:
+{{
+  "thought": "neden bu aracı seçtin",
+  "action": "araç_adı",
+  "input": "araç girdisi"
+}}
+- Araç kullanmayacaksan sadece cevabı yaz.
+Mevcut araçlar:
+{tools_string}
+Kullanıcı: {user_prompt}
+Cevap:
+"""
+
+    print(f"{Colors.OKBLUE}Model düşünüyor...{Colors.ENDC}")
+    ai_response = ask(prompt, max_new_tokens=512).strip()
+
+    response_json = extract_json(ai_response)
+    final_response = ""
+
+    if response_json:
+        thought = response_json.get("thought", "")
+        tool_name = response_json.get("action", None)
+        tool_input = response_json.get("input", "")
+
+        if thought:
+            print(f"{Colors.BOLD}\n[Düşünce]: {thought}{Colors.ENDC}")
+
+        # Eğer action None veya "none" ise direkt cevap ver
+        if tool_name in [None, "none"]:
+            final_response = ai_response
+
+        # Araç çalıştır
+        elif tool_name in AVAILABLE_TOOLS:
+            print(f"{Colors.WARNING}[{tool_name}] aracı kullanılıyor... Input: [{tool_input}]{Colors.ENDC}")
+            try:
+                tool_func = AVAILABLE_TOOLS[tool_name]["func"]
+
+                if tool_name == "search_and_summarize":
+                    if tool_input in web_cache:
+                        tool_result = web_cache[tool_input]
+                    else:
+                        tool_result = tool_func(tool_input, llm_ask_function=ask)
+                        web_cache[tool_input] = tool_result
+                elif tool_name == "get_system_status":
+                    tool_result = tool_func()
+                else:
+                    tool_result = tool_func(tool_input) if tool_input else "Boş girdi hatası."
+
+                final_response = f"Sonuç: {tool_result}"
+                log_tool_action(thought, tool_name, tool_input, reward=1.0)  # reward=1 (başarılı)
+            except Exception as e:
+                traceback.print_exc()
+                final_response = f"Araç çalıştırma hatası: {e}"
+                log_tool_action(thought, tool_name, tool_input, reward=-1.0)  # reward=-1 (hata)
+        else:
+            final_response = "Bilinmeyen araç adı."
+    else:
+        # JSON değilse direkt sohbet cevabı
+        final_response = ai_response
+
+    short_term_memory.add_message(role="agent", content=final_response)
+    print(f"{Colors.OKGREEN}\nFinal Yanıtı:\n{final_response}{Colors.ENDC}")
+
+
+def main():
+    print(f"{Colors.HEADER}Yapay Zeka Asistanı başlatıldı. Çıkmak için 'q' yazın.{Colors.ENDC}")
+
+    # Modeli indir ve yükle
+    download_model()
+    from agent.models.llm import load_model
+    load_model()
+
+    try:
+        while True:
+            user_input = input(f"{Colors.BOLD}\nSen: {Colors.ENDC}")
+            if user_input.lower() in ['q', 'quit', 'exit']:
+                print("Asistan kapatılıyor...")
+                break
+            run_agent(user_input)
+    except KeyboardInterrupt:
+        print("\nAsistan kapatılıyor...")
+    finally:
+        long_term_memory.close()
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,22 @@
+{
+  "crypto": {
+    "tools": ["get_crypto_advice", "critical_web_researcher"],
+    "synthesis_prompt": "Bir kripto para uzmanından gelen teknik analizi ve bir web araştırmasından gelen en güncel haberleri ve piyasa duyarlılığını birleştir. Bu iki kaynaktan gelen bilgileri kullanarak, hedef varlık hakkında kapsamlı, dengeli ve güncel bir yatırım raporu oluştur. Raporda hem teknik göstergeleri hem de güncel gelişmeleri dikkate alarak potansiyel riskleri ve fırsatları vurgula."
+  },
+  "stock": {
+    "tools": ["get_investment_advice", "critical_web_researcher"],
+    "synthesis_prompt": "Bir hisse senedi uzmanından gelen temel ve teknik analizi ve bir web araştırmasından gelen en güncel şirket haberlerini ve piyasa duyarlılığını birleştir. Bu iki kaynaktan gelen bilgileri kullanarak, hedef hisse senedi hakkında kapsamlı, dengeli ve güncel bir yatırım raporu oluştur. Raporda hem şirketin finansal durumunu hem de güncel gelişmeleri dikkate alarak potansiyel riskleri ve fırsatları vurgula."
+  },
+  "security": {
+    "tools": ["critical_web_researcher"],
+    "synthesis_prompt": "Aşağıdaki siber güvenlik araştırmasının sonuçlarını analiz et ve konuyu tüm yönleriyle açıklayan, iyi yapılandırılmış, teknik olarak doğru ve anlaşılır bir rapor oluştur."
+  },
+  "philosophy": {
+    "tools": ["learn_philosophy"],
+    "synthesis_prompt": "Aşağıdaki felsefi metni analiz et ve ana fikirleri, argümanları ve çıkarımları özetleyen net ve anlaşılır bir açıklama sun."
+  },
+  "default": {
+    "tools": ["critical_web_researcher"],
+    "synthesis_prompt": "Aşağıdaki araştırma sonuçlarını analiz et ve konuyu tüm yönleriyle açıklayan, iyi yapılandırılmış ve anlaşılır bir rapor oluştur."
+  }
+}

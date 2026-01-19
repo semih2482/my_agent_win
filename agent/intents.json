@@ -1,0 +1,101 @@
+{
+    "intents": [
+      {
+        "name": "chat",
+        "examples": [
+          "merhaba",
+          "selam",
+          "naber",
+          "nasılsın",
+          "günaydın",
+          "iyi günler",
+          "iyi akşamlar",
+          "konuşalım mı?",
+          "sohbet edebilir miyiz?"
+        ],
+        "strategy": "reactive"
+      },
+      {
+        "name": "search",
+        "examples": [
+          "türkiye'nin başkenti neresidir?",
+          "ikinci dünya savaşı ne zaman başladı?",
+          "internet'te şunu araştır:",
+          "bana şunun hakkında bilgi bul:",
+          "kimdir",
+          "nedir"
+        ],
+        "strategy": "reactive"
+      },
+      {
+        "name": "calculate",
+        "examples": [
+          "15*25 kaç eder?",
+          "hesapla: (10+5)/3",
+          "karekök 144",
+          "sin(90)"
+        ],
+        "strategy": "reactive"
+      },
+      {
+        "name": "analyze",
+        "examples": [
+          "bu metni özetle",
+          "bu makaleyi analiz et",
+          "şu raporu benim için yorumla",
+          "ana fikirleri çıkar"
+        ],
+        "strategy": "planner"
+      },
+      {
+        "name": "code_generation",
+        "examples": [
+          "bana bir python fonksiyonu yazar mısın?",
+          "bir kullanıcı için javascript sınıfı oluştur",
+          "günlük görevlerimi otomatikleştirmek için bir betik yaz",
+          "kod yaz",
+          "kodunu yazar mısın"
+        ],
+        "strategy": "planner"
+      },
+      {
+        "name": "memory",
+        "examples": [
+          "bunu hatırla",
+          "şunu not al",
+          "bu bilgiyi unutma",
+          "veritabanına kaydet"
+        ],
+        "strategy": "reactive"
+      },
+      {
+        "name": "project_edit",
+        "examples": [
+          "projeyi düzenle",
+          "bu dosyaya şunu ekle",
+          "koddaki hatayı düzelt",
+          "patch uygula"
+        ],
+        "strategy": "planner"
+      },
+      {
+        "name": "image_analysis",
+        "examples": [
+          "bu fotoğrafı analiz et",
+          "resimdeki metni oku",
+          "görselde ne var?",
+          "ocr uygula"
+        ],
+        "strategy": "reactive"
+      },
+      {
+        "name": "complex_question",
+        "examples": [
+          "siber güvenlik hakkında araştırmalarından ne öğrendin? bu konuda kodlama yapman gerekirse yapabilir misin? web zaafiyeti araştır dersem bunun için tool oluşturabilir misin?",
+          "hem X konusunu araştır hem de Y ile ilgili bir rapor hazırla",
+          "önce A dosyasını oku, sonra içindeki bilgileri kullanarak B işlemini yap ve sonucu C dosyasına yaz"
+        ],
+        "strategy": "planner"
+      }
+    ]
+  }

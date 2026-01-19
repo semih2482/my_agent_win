@@ -1,0 +1,12 @@
+# Lütfen versiyon numaralarını manuel olarak gözden geçirin ve ekleyin, örn: numpy==1.23.4
+numpy
+transformers
+datasets
+llama-cpp-python
+sentence-transformers
+torch
+ddgs
+jsonschema
+requests
+patch
+pytest
